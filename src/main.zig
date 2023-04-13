@@ -4,6 +4,10 @@ const xlib = @import("xlib.zig");
 var display: *xlib.Display = undefined;
 var root: xlib.Window = undefined;
 
+var clients = std.AutoHashMap(xlib.Window, xlib.Window).init(
+    std.heap.page_allocator,
+);
+
 fn onCreateNotify(e: xlib.XCreateWindowEvent) !void {
     _ = e;
 }
@@ -18,6 +22,12 @@ fn onConfigureRequest(e: xlib.XConfigureRequestEvent) !void {
         .sibling = e.above,
         .stack_mode = e.detail,
     };
+
+    // If already framed
+    if (clients.getEntry(e.window)) |entry| {
+        std.debug.print("Resize [{any}] to {d},{d}", .{ entry.value_ptr.*, e.width, e.height });
+        xlib.XConfigureWindow(display, entry.value_ptr.*, e.value_mask, &changes);
+    }
 
     xlib.XConfigureWindow(display, e.window, e.value_mask, &changes);
 }
@@ -66,6 +76,8 @@ fn frame(w: xlib.Window) !void {
     try xlib.XReparentWindow(display, w, frame_w, 0, 0);
 
     try xlib.XMapWindow(display, frame_w);
+
+    try clients.put(w, frame_w);
 }
 
 pub fn main() !void {
@@ -78,8 +90,6 @@ pub fn main() !void {
     while (true) {
         var e: xlib.XEvent = undefined;
         xlib.XNextEvent(display, &e);
-
-        std.debug.print("Event: {d}\n", .{e.type});
 
         switch (e.type) {
             xlib.CreateNotify => {
