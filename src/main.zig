@@ -72,6 +72,12 @@ fn onReparentNotify(e: xlib.XReparentEvent) !void {
     std.debug.print("[{any}] was reparented (parent=[{any}]\n", .{ e.window, e.parent });
 }
 
+fn onKeyPress(e: xlib.XKeyPressedEvent) !void {
+    if (((e.state & xlib.Mod1Mask) != 0) and (e.keycode == xlib.XKeysymToKeycode(display, xlib.XK_F4))) {
+        try close(e.window);
+    }
+}
+
 /// Frame a window
 fn frame(w: xlib.Window, primitive: bool) !void {
     std.debug.print("Framing [{any}]\n", .{w});
@@ -129,6 +135,17 @@ fn frame(w: xlib.Window, primitive: bool) !void {
     // Add to clients list
     try clients.put(w, frame_w);
     std.debug.print("Updated clients list (len={d})\n", .{clients.count()});
+
+    // Grab Keys
+    try xlib.XGrabKey(
+        display,
+        xlib.XKeysymToKeycode(display, xlib.XK_F4),
+        xlib.Mod1Mask,
+        w,
+        false,
+        xlib.GrabModeAsync,
+        xlib.GrabModeAsync,
+    );
 }
 
 /// Unframe a window
@@ -154,6 +171,37 @@ fn unframe(w: xlib.Window) !void {
     // Remove from the clients list
     _ = clients.remove(w);
     std.debug.print("Updated clients list (len={d})\n", .{clients.count()});
+}
+
+fn close(w: xlib.Window) !void {
+    std.debug.print("About to close [{any}]\n", .{w});
+
+    // We must detect if the client supports WM_DELETE_WINDOW
+    var supported_protocols_ptr: [*]xlib.Atom = undefined;
+    var supported_protocols_count: u32 = undefined;
+    try xlib.XGetWMProtocols(display, w, &supported_protocols_ptr, &supported_protocols_count);
+    var supported_protocols = supported_protocols_ptr[0..supported_protocols_count];
+    var wm_delete_support: bool = false;
+    var wm_delete_window: xlib.Atom = xlib.XInternAtom(display, "WM_DELETE_WINDOW", false);
+    var wm_protocols: xlib.Atom = xlib.XInternAtom(display, "WM_PROTOCOLS", false);
+    for (supported_protocols) |protocol| {
+        if (protocol == wm_delete_window) wm_delete_support = true;
+    }
+
+    if (wm_delete_support) {
+        std.debug.print("Using WM_DELETE_WINDOW on [{any}] to close it\n", .{w});
+
+        var msg: xlib.XEvent = std.mem.zeroes(xlib.XEvent);
+        msg.xclient.type = xlib.ClientMessage;
+        msg.xclient.message_type = wm_protocols;
+        msg.xclient.window = w;
+        msg.xclient.format = 32;
+        msg.xclient.data.l[0] = @intCast(c_long, wm_delete_window);
+        xlib.XSendEvent(display, w, false, 0, &msg);
+    } else {
+        std.debug.print("Using XKillClient() on [{any}] to close it\n", .{w});
+        xlib.XKillClient(display, w);
+    }
 }
 
 pub fn main() !void {
@@ -221,6 +269,9 @@ pub fn main() !void {
             },
             xlib.ReparentNotify => {
                 try onReparentNotify(e.xreparent);
+            },
+            xlib.KeyPress => {
+                try onKeyPress(e.xkey);
             },
             else => {},
         }
