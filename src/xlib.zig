@@ -12,6 +12,8 @@ pub const UnmapNotify = c.UnmapNotify;
 pub const DestroyNotify = c.DestroyNotify;
 pub const ReparentNotify = c.ReparentNotify;
 
+pub const IsViewable = c.IsViewable;
+
 pub const Display = c.Display;
 pub const Window = c.Window;
 pub const XWindowChanges = c.XWindowChanges;
@@ -97,4 +99,20 @@ pub fn XMapWindow(display: *Display, w: Window) error{BadWindow}!void {
 
 pub fn XUnmapWindow(display: *Display, w: Window) error{BadWindow}!void {
     if (c.XUnmapWindow(display, w) == c.BadWindow) return error.BadWindow;
+}
+
+pub fn XGrabServer(display: *Display) void {
+    _ = c.XGrabServer(display);
+}
+
+pub fn XUngrabServer(display: *Display) void {
+    _ = c.XUngrabServer(display);
+}
+
+pub fn XQueryTree(display: *Display, w: Window, root_return: *Window, parent_return: *Window, children_return: *[*]Window, nchildren_return: *u32) error{BadWindow}!void {
+    if (c.XQueryTree(display, w, root_return, parent_return, @ptrCast([*c][*c]Window, children_return), nchildren_return) == c.BadWindow) return error.BadWindow;
+}
+
+pub fn XFree(data: anytype) void {
+    _ = c.XFree(@ptrCast(?*anyopaque, data));
 }

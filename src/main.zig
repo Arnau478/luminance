@@ -40,11 +40,15 @@ fn onConfigureRequest(e: xlib.XConfigureRequestEvent) !void {
 
 fn onMapRequest(e: xlib.XMapRequestEvent) !void {
     std.debug.print("Map request by [{any}]\n", .{e.window});
-    try frame(e.window);
+    try frame(e.window, false);
     try xlib.XMapWindow(display, e.window);
 }
 
 fn onUnmapNotify(e: xlib.XUnmapEvent) !void {
+    if (e.event == root) {
+        std.debug.print("UnmapNotify for [{any}] ignored due to e.event=root\n", .{e.window});
+        return;
+    }
     std.debug.print("[{any}] was unmapped\n", .{e.window});
     if (clients.contains(e.window)) try unframe(e.window);
 }
@@ -57,7 +61,7 @@ fn onReparentNotify(e: xlib.XReparentEvent) !void {
     std.debug.print("[{any}] was reparented (parent=[{any}]\n", .{ e.window, e.parent });
 }
 
-fn frame(w: xlib.Window) !void {
+fn frame(w: xlib.Window, primitive: bool) !void {
     std.debug.print("Framing [{any}]\n", .{w});
 
     const border_width: u32 = 3;
@@ -66,6 +70,12 @@ fn frame(w: xlib.Window) !void {
 
     var x_window_attrs: xlib.XWindowAttributes = undefined;
     try xlib.XGetWindowAttributes(display, w, &x_window_attrs);
+
+    // Check if it was present before the WM
+    if (primitive) {
+        // In that case, it may not be visible or have override_redirect set
+        if (x_window_attrs.override_redirect != 0 or x_window_attrs.map_state != xlib.IsViewable) return;
+    }
 
     const frame_w: xlib.Window = xlib.XCreateSimpleWindow(
         display,
@@ -122,6 +132,24 @@ pub fn main() !void {
     xlib.XSync(display, false);
 
     xlib.XSetErrorHandler(dummyErrorHandler);
+
+    // Frame existring windows
+    xlib.XGrabServer(display);
+
+    var top_level_windows_ptr: [*]xlib.Window = undefined;
+    var top_level_windows_count: u32 = undefined;
+    var ret_root: xlib.Window = undefined;
+    var ret_parent: xlib.Window = undefined;
+    try xlib.XQueryTree(display, root, &ret_root, &ret_parent, &top_level_windows_ptr, &top_level_windows_count);
+    var top_level_windows = top_level_windows_ptr[0..top_level_windows_count];
+
+    for (top_level_windows) |win| {
+        std.debug.print("About to frame [{any}] as primitive window\n", .{win});
+        try frame(win, true);
+    }
+
+    xlib.XFree(top_level_windows_ptr);
+    xlib.XUngrabServer(display);
 
     while (true) {
         var e: xlib.XEvent = undefined;
