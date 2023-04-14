@@ -48,8 +48,8 @@ pub fn XOpenDisplay(display_name: ?[*]const u8) error{XOpenDisplayError}!*Displa
     } else return error.XOpenDisplayError;
 }
 
-pub fn XCloseDisplay(display: *Display) error{BadGC}!void {
-    if (c.XCloseDisplay(display) == c.BadGC) return error.BadGC;
+pub fn XCloseDisplay(display: *Display) void {
+    _ = c.XCloseDisplay(display);
 }
 
 pub fn DefaultRootWindow(display: *Display) Window {
@@ -76,44 +76,36 @@ pub fn XConfigureWindow(display: *Display, w: Window, value_mask: c_ulong, chang
     _ = c.XConfigureWindow(display, w, @intCast(c_uint, value_mask), changes);
 }
 
-pub fn XGetWindowAttributes(display: *Display, w: Window, window_attributes_return: *XWindowAttributes) error{ BadDrawable, BadWindow }!void {
-    const ret = c.XGetWindowAttributes(display, w, window_attributes_return);
-    if (ret == c.BadDrawable) return error.BadDrawable;
-    if (ret == c.BadWindow) return error.BadWindow;
+pub fn XGetWindowAttributes(display: *Display, w: Window, window_attributes_return: *XWindowAttributes) void {
+    _ = c.XGetWindowAttributes(display, w, window_attributes_return);
 }
 
 pub fn XCreateSimpleWindow(display: *Display, parent: Window, x: c_int, y: c_int, width: i32, height: i32, border_width: u32, border: u64, background: u64) Window {
     return c.XCreateSimpleWindow(display, parent, x, y, @intCast(c_uint, width), @intCast(c_uint, height), border_width, border, background);
 }
 
-pub fn XDestroyWindow(display: *Display, w: Window) error{BadWindow}!void {
-    if (c.XDestroyWindow(display, w) == c.BadWindow) return error.BadWindow;
+pub fn XDestroyWindow(display: *Display, w: Window) void {
+    _ = c.XDestroyWindow(display, w);
 }
 
-pub fn XAddToSaveSet(display: *Display, w: Window) error{ BadMatch, BadWindow }!void {
-    const ret = c.XAddToSaveSet(display, w);
-    if (ret == c.BadMatch) return error.BadMatch;
-    if (ret == c.BadWindow) return error.BadWindow;
+pub fn XAddToSaveSet(display: *Display, w: Window) void {
+    _ = c.XAddToSaveSet(display, w);
 }
 
-pub fn XRemoveFromSaveSet(display: *Display, w: Window) error{ BadMatch, BadWindow }!void {
-    const ret = c.XRemoveFromSaveSet(display, w);
-    if (ret == c.BadMatch) return error.BadMatch;
-    if (ret == c.BadWindow) return error.BadWindow;
+pub fn XRemoveFromSaveSet(display: *Display, w: Window) void {
+    _ = c.XRemoveFromSaveSet(display, w);
 }
 
-pub fn XReparentWindow(display: *Display, w: Window, parent: Window, x: i32, y: i32) error{ BadMatch, BadWindow }!void {
-    const ret = c.XReparentWindow(display, w, parent, x, y);
-    if (ret == c.BadMatch) return error.BadMatch;
-    if (ret == c.BadWindow) return error.BadWindow;
+pub fn XReparentWindow(display: *Display, w: Window, parent: Window, x: i32, y: i32) void {
+    _ = c.XReparentWindow(display, w, parent, x, y);
 }
 
-pub fn XMapWindow(display: *Display, w: Window) error{BadWindow}!void {
-    if (c.XMapWindow(display, w) == c.BadWindow) return error.BadWindow;
+pub fn XMapWindow(display: *Display, w: Window) void {
+    _ = c.XMapWindow(display, w);
 }
 
-pub fn XUnmapWindow(display: *Display, w: Window) error{BadWindow}!void {
-    if (c.XUnmapWindow(display, w) == c.BadWindow) return error.BadWindow;
+pub fn XUnmapWindow(display: *Display, w: Window) void {
+    _ = c.XUnmapWindow(display, w);
 }
 
 pub fn XGrabServer(display: *Display) void {
@@ -124,27 +116,24 @@ pub fn XUngrabServer(display: *Display) void {
     _ = c.XUngrabServer(display);
 }
 
-pub fn XQueryTree(display: *Display, w: Window, root_return: *Window, parent_return: *Window, children_return: *[*]Window, nchildren_return: *u32) error{BadWindow}!void {
-    if (c.XQueryTree(display, w, root_return, parent_return, @ptrCast([*c][*c]Window, children_return), nchildren_return) == c.BadWindow) return error.BadWindow;
+pub fn XQueryTree(display: *Display, w: Window, root_return: *Window, parent_return: *Window, children_return: *[*]Window, nchildren_return: *u32) void {
+    _ = c.XQueryTree(display, w, root_return, parent_return, @ptrCast([*c][*c]Window, children_return), nchildren_return);
 }
 
 pub fn XFree(data: anytype) void {
     _ = c.XFree(@ptrCast(?*anyopaque, data));
 }
 
-pub fn XGrabKey(display: *Display, keycode: i32, modifiers: c_uint, grab_window: Window, owner_events: bool, pointer_mode: i32, keyboard_mode: i32) error{ BadAccess, BadValue, BadWindow }!void {
-    var res = c.XGrabKey(display, keycode, modifiers, grab_window, @boolToInt(owner_events), pointer_mode, keyboard_mode);
-    if (res == c.BadAccess) return error.BadAccess;
-    if (res == c.BadValue) return error.BadValue;
-    if (res == c.BadWindow) return error.BadWindow;
+pub fn XGrabKey(display: *Display, keycode: i32, modifiers: c_uint, grab_window: Window, owner_events: bool, pointer_mode: i32, keyboard_mode: i32) void {
+    _ = c.XGrabKey(display, keycode, modifiers, grab_window, @boolToInt(owner_events), pointer_mode, keyboard_mode);
 }
 
 pub fn XKeysymToKeycode(display: *Display, keysym: KeySym) KeyCode {
     return c.XKeysymToKeycode(display, keysym);
 }
 
-pub fn XGetWMProtocols(display: *Display, w: Window, protocols_return: *[*]Atom, count_return: *u32) error{BadWindow}!void {
-    if (c.XGetWMProtocols(display, w, @ptrCast([*c][*c]Atom, protocols_return), @ptrCast([*c]c_int, count_return)) == c.BadWindow) return error.BadWindow;
+pub fn XGetWMProtocols(display: *Display, w: Window, protocols_return: *[*]Atom, count_return: *u32) void {
+    _ = c.XGetWMProtocols(display, w, @ptrCast([*c][*c]Atom, protocols_return), @ptrCast([*c]c_int, count_return));
 }
 
 pub fn XInternAtom(display: *Display, atom_name: []const u8, only_if_exists: bool) Atom {

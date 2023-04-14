@@ -48,7 +48,7 @@ fn onMapRequest(e: xlib.XMapRequestEvent) !void {
     // When a window is mapped, we should frame it
     try frame(e.window, false);
     // Then, we can pass the request to the X server
-    try xlib.XMapWindow(display, e.window);
+    xlib.XMapWindow(display, e.window);
 }
 
 fn onUnmapNotify(e: xlib.XUnmapEvent) !void {
@@ -74,7 +74,7 @@ fn onReparentNotify(e: xlib.XReparentEvent) !void {
 
 fn onKeyPress(e: xlib.XKeyPressedEvent) !void {
     if (((e.state & xlib.Mod1Mask) != 0) and (e.keycode == xlib.XKeysymToKeycode(display, xlib.XK_F4))) {
-        try close(e.window);
+        close(e.window);
     }
 }
 
@@ -90,7 +90,7 @@ fn frame(w: xlib.Window, primitive: bool) !void {
 
     // Get the window attributes
     var x_window_attrs: xlib.XWindowAttributes = undefined;
-    try xlib.XGetWindowAttributes(display, w, &x_window_attrs);
+    xlib.XGetWindowAttributes(display, w, &x_window_attrs);
 
     // Check if it was present before the WM (a.k.a "primitive" window)
     if (primitive) {
@@ -124,20 +124,20 @@ fn frame(w: xlib.Window, primitive: bool) !void {
     );
 
     // We add the window to the save set so that it gets restored if the WM stops
-    try xlib.XAddToSaveSet(display, w);
+    xlib.XAddToSaveSet(display, w);
 
     // We make the client window a child of the frame window
-    try xlib.XReparentWindow(display, w, frame_w, 0, 0);
+    xlib.XReparentWindow(display, w, frame_w, 0, 0);
 
     // Map the frame
-    try xlib.XMapWindow(display, frame_w);
+    xlib.XMapWindow(display, frame_w);
 
     // Add to clients list
     try clients.put(w, frame_w);
     std.debug.print("Updated clients list (len={d})\n", .{clients.count()});
 
     // Grab Keys
-    try xlib.XGrabKey(
+    xlib.XGrabKey(
         display,
         xlib.XKeysymToKeycode(display, xlib.XK_F4),
         xlib.Mod1Mask,
@@ -154,32 +154,32 @@ fn unframe(w: xlib.Window) !void {
     std.debug.print("Unframing [{any}] (frame_w=[{any}])\n", .{ w, frame_w });
 
     // Unmap the frame
-    try xlib.XUnmapWindow(display, frame_w);
+    xlib.XUnmapWindow(display, frame_w);
 
     // Reparent the client window to the root window again
     // Note: This may fail if the window has already been destroyed by
     // the client, but that's OK, we only care about reparenting it if
     // it's not destroyed yet
-    try xlib.XReparentWindow(display, w, root, 0, 0);
+    xlib.XReparentWindow(display, w, root, 0, 0);
 
     // Remove from the save set (we no longer need it to be restored)
-    try xlib.XRemoveFromSaveSet(display, w);
+    xlib.XRemoveFromSaveSet(display, w);
 
     // Destroy the frame
-    try xlib.XDestroyWindow(display, frame_w);
+    xlib.XDestroyWindow(display, frame_w);
 
     // Remove from the clients list
     _ = clients.remove(w);
     std.debug.print("Updated clients list (len={d})\n", .{clients.count()});
 }
 
-fn close(w: xlib.Window) !void {
+fn close(w: xlib.Window) void {
     std.debug.print("About to close [{any}]\n", .{w});
 
     // We must detect if the client supports WM_DELETE_WINDOW
     var supported_protocols_ptr: [*]xlib.Atom = undefined;
     var supported_protocols_count: u32 = undefined;
-    try xlib.XGetWMProtocols(display, w, &supported_protocols_ptr, &supported_protocols_count);
+    xlib.XGetWMProtocols(display, w, &supported_protocols_ptr, &supported_protocols_count);
     var supported_protocols = supported_protocols_ptr[0..supported_protocols_count];
     var wm_delete_support: bool = false;
     var wm_delete_window: xlib.Atom = xlib.XInternAtom(display, "WM_DELETE_WINDOW", false);
@@ -208,7 +208,7 @@ pub fn main() !void {
     // Open default (null) display
     display = try xlib.XOpenDisplay(null);
     // When we finish, we should close it
-    defer xlib.XCloseDisplay(display) catch {};
+    defer xlib.XCloseDisplay(display);
 
     // Now, get the root window
     root = xlib.DefaultRootWindow(display);
@@ -228,7 +228,7 @@ pub fn main() !void {
     var top_level_windows_count: u32 = undefined;
     var ret_root: xlib.Window = undefined;
     var ret_parent: xlib.Window = undefined;
-    try xlib.XQueryTree(display, root, &ret_root, &ret_parent, &top_level_windows_ptr, &top_level_windows_count);
+    xlib.XQueryTree(display, root, &ret_root, &ret_parent, &top_level_windows_ptr, &top_level_windows_count);
     var top_level_windows = top_level_windows_ptr[0..top_level_windows_count];
 
     // Frame every window detected
