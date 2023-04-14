@@ -8,6 +8,7 @@ pub const SubstructureNotifyMask = c.SubstructureNotifyMask;
 pub const CreateNotify = c.CreateNotify;
 pub const ConfigureRequest = c.ConfigureRequest;
 pub const MapRequest = c.MapRequest;
+pub const UnmapNotify = c.UnmapNotify;
 pub const DestroyNotify = c.DestroyNotify;
 pub const ReparentNotify = c.ReparentNotify;
 
@@ -16,9 +17,11 @@ pub const Window = c.Window;
 pub const XWindowChanges = c.XWindowChanges;
 pub const XWindowAttributes = c.XWindowAttributes;
 pub const XEvent = c.XEvent;
+pub const XErrorEvent = c.XErrorEvent;
 pub const XCreateWindowEvent = c.XCreateWindowEvent;
 pub const XConfigureRequestEvent = c.XConfigureRequestEvent;
 pub const XMapRequestEvent = c.XMapRequestEvent;
+pub const XUnmapEvent = c.XUnmapEvent;
 pub const XDestroyWindowEvent = c.XDestroyWindowEvent;
 pub const XReparentEvent = c.XReparentEvent;
 
@@ -34,6 +37,10 @@ pub fn XCloseDisplay(display: *Display) error{BadGC}!void {
 
 pub fn DefaultRootWindow(display: *Display) Window {
     return c.DefaultRootWindow(display);
+}
+
+pub fn XSetErrorHandler(handler: *const fn (?*Display, ?*XErrorEvent) callconv(.C) c_int) void {
+    _ = c.XSetErrorHandler(handler);
 }
 
 pub fn XSelectInput(display: *Display, w: Window, event_mask: c_long) void {
@@ -62,8 +69,18 @@ pub fn XCreateSimpleWindow(display: *Display, parent: Window, x: c_int, y: c_int
     return c.XCreateSimpleWindow(display, parent, x, y, @intCast(c_uint, width), @intCast(c_uint, height), border_width, border, background);
 }
 
+pub fn XDestroyWindow(display: *Display, w: Window) error{BadWindow}!void {
+    if (c.XDestroyWindow(display, w) == c.BadWindow) return error.BadWindow;
+}
+
 pub fn XAddToSaveSet(display: *Display, w: Window) error{ BadMatch, BadWindow }!void {
     const ret = c.XAddToSaveSet(display, w);
+    if (ret == c.BadMatch) return error.BadMatch;
+    if (ret == c.BadWindow) return error.BadWindow;
+}
+
+pub fn XRemoveFromSaveSet(display: *Display, w: Window) error{ BadMatch, BadWindow }!void {
+    const ret = c.XRemoveFromSaveSet(display, w);
     if (ret == c.BadMatch) return error.BadMatch;
     if (ret == c.BadWindow) return error.BadWindow;
 }
@@ -76,4 +93,8 @@ pub fn XReparentWindow(display: *Display, w: Window, parent: Window, x: i32, y: 
 
 pub fn XMapWindow(display: *Display, w: Window) error{BadWindow}!void {
     if (c.XMapWindow(display, w) == c.BadWindow) return error.BadWindow;
+}
+
+pub fn XUnmapWindow(display: *Display, w: Window) error{BadWindow}!void {
+    if (c.XUnmapWindow(display, w) == c.BadWindow) return error.BadWindow;
 }
