@@ -1,5 +1,6 @@
 const std = @import("std");
 const xlib = @import("xlib.zig");
+const util = @import("util.zig");
 
 var display: *xlib.Display = undefined;
 var root: xlib.Window = undefined;
@@ -154,6 +155,8 @@ pub fn main() !void {
     while (true) {
         var e: xlib.XEvent = undefined;
         xlib.XNextEvent(display, &e);
+
+        std.debug.print(":: {s}\n", .{util.eventToString(e)});
 
         switch (e.type) {
             xlib.CreateNotify => {
