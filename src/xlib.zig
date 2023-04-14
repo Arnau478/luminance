@@ -80,6 +80,10 @@ pub fn XGetWindowAttributes(display: *Display, w: Window, window_attributes_retu
     _ = c.XGetWindowAttributes(display, w, window_attributes_return);
 }
 
+pub fn XSetWindowBackground(display: *Display, w: Window, color: u64) void {
+    _ = c.XSetWindowBackground(display, w, color);
+}
+
 pub fn XCreateSimpleWindow(display: *Display, parent: Window, x: c_int, y: c_int, width: i32, height: i32, border_width: u32, border: u64, background: u64) Window {
     return c.XCreateSimpleWindow(display, parent, x, y, @intCast(c_uint, width), @intCast(c_uint, height), border_width, border, background);
 }
@@ -146,4 +150,8 @@ pub fn XSendEvent(display: *Display, w: Window, propagate: bool, event_mask: i64
 
 pub fn XKillClient(display: *Display, w: Window) void {
     _ = c.XKillClient(display, w);
+}
+
+pub fn XClearWindow(display: *Display, w: Window) void {
+    _ = c.XClearWindow(display, w);
 }

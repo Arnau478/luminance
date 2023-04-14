@@ -242,6 +242,11 @@ pub fn main() !void {
     // And ungrab the server to continue normally
     xlib.XUngrabServer(display);
 
+    // Set the root window background color
+    const root_background_color = 0x88aaaa;
+    xlib.XSetWindowBackground(display, root, root_background_color);
+    xlib.XClearWindow(display, root);
+
     // Main event loop
     while (true) {
         // Get next event
