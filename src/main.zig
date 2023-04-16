@@ -1,6 +1,9 @@
 const std = @import("std");
 const xlib = @import("xlib.zig");
 const util = @import("util.zig");
+const config = @import("config.zig");
+
+var conf: config.Config = undefined;
 
 var display: *xlib.Display = undefined;
 var root: xlib.Window = undefined;
@@ -82,12 +85,6 @@ fn onKeyPress(e: xlib.XKeyPressedEvent) !void {
 fn frame(w: xlib.Window, primitive: bool) !void {
     std.debug.print("Framing [{any}]\n", .{w});
 
-    // Hard-coded values for framing
-    // TODO: Change this when config files are a thing
-    const border_width: u32 = 3;
-    const border_color: u64 = 0xff0000;
-    const bg_color: u64 = 0x000000;
-
     // Get the window attributes
     var x_window_attrs: xlib.XWindowAttributes = undefined;
     xlib.XGetWindowAttributes(display, w, &x_window_attrs);
@@ -109,9 +106,9 @@ fn frame(w: xlib.Window, primitive: bool) !void {
         x_window_attrs.width,
         x_window_attrs.height,
         // Framing configuration
-        border_width,
-        border_color,
-        bg_color,
+        conf.window.frame.width,
+        try util.strColor(conf.window.frame.color),
+        try util.strColor(conf.window.background),
     );
 
     std.debug.print("Created [{any}] as a frame for [{any}]\n", .{ frame_w, w });
@@ -205,6 +202,8 @@ fn close(w: xlib.Window) void {
 }
 
 pub fn main() !void {
+    conf = try config.getConfig();
+
     // Open default (null) display
     display = try xlib.XOpenDisplay(null);
     // When we finish, we should close it
@@ -243,8 +242,7 @@ pub fn main() !void {
     xlib.XUngrabServer(display);
 
     // Set the root window background color
-    const root_background_color = 0x88aaaa;
-    xlib.XSetWindowBackground(display, root, root_background_color);
+    xlib.XSetWindowBackground(display, root, try util.strColor(conf.background));
     xlib.XClearWindow(display, root);
 
     // Main event loop
