@@ -22,8 +22,6 @@ pub const GrabModeAsync = c.GrabModeAsync;
 
 pub const Mod1Mask = c.Mod1Mask;
 
-pub const XK_F4 = c.XK_F4;
-
 pub const Atom = c.Atom;
 pub const KeySym = c.KeySym;
 pub const KeyCode = c.KeyCode;
@@ -134,6 +132,10 @@ pub fn XGrabKey(display: *Display, keycode: i32, modifiers: c_uint, grab_window:
 
 pub fn XKeysymToKeycode(display: *Display, keysym: KeySym) KeyCode {
     return c.XKeysymToKeycode(display, keysym);
+}
+
+pub fn XStringToKeysym(string: []const u8) KeySym {
+    return c.XStringToKeysym(@ptrCast([*c]const u8, string));
 }
 
 pub fn XGetWMProtocols(display: *Display, w: Window, protocols_return: *[*]Atom, count_return: *u32) void {

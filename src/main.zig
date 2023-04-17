@@ -76,8 +76,8 @@ fn onReparentNotify(e: xlib.XReparentEvent) !void {
 }
 
 fn onKeyPress(e: xlib.XKeyPressedEvent) !void {
-    if (((e.state & xlib.Mod1Mask) != 0) and (e.keycode == xlib.XKeysymToKeycode(display, xlib.XK_F4))) {
-        close(e.window);
+    if (((e.state & xlib.Mod1Mask) != 0) and (e.keycode == xlib.XKeysymToKeycode(display, xlib.XStringToKeysym("F4")))) {
+        close(try util.getNthChild(display, e.subwindow, 0));
     }
 }
 
@@ -132,17 +132,6 @@ fn frame(w: xlib.Window, primitive: bool) !void {
     // Add to clients list
     try clients.put(w, frame_w);
     std.debug.print("Updated clients list (len={d})\n", .{clients.count()});
-
-    // Grab Keys
-    xlib.XGrabKey(
-        display,
-        xlib.XKeysymToKeycode(display, xlib.XK_F4),
-        xlib.Mod1Mask,
-        w,
-        false,
-        xlib.GrabModeAsync,
-        xlib.GrabModeAsync,
-    );
 }
 
 /// Unframe a window
@@ -240,6 +229,8 @@ pub fn main() !void {
     xlib.XFree(top_level_windows_ptr);
     // And ungrab the server to continue normally
     xlib.XUngrabServer(display);
+
+    xlib.XGrabKey(display, xlib.XKeysymToKeycode(display, xlib.XStringToKeysym("F4")), xlib.Mod1Mask, root, true, xlib.GrabModeAsync, xlib.GrabModeAsync);
 
     // Set the root window background color
     xlib.XSetWindowBackground(display, root, try util.strColor(conf.background));

@@ -51,3 +51,15 @@ pub fn strColor(str: []const u8) !u64 {
 
     return std.fmt.parseInt(u64, str[1..7], 16);
 }
+
+/// Get the nth child window of a window
+pub fn getNthChild(display: *xlib.Display, w: xlib.Window, n: u32) !xlib.Window {
+    var window_ptr: [*]xlib.Window = undefined;
+    var window_count: u32 = undefined;
+    var ret_root: xlib.Window = undefined;
+    var ret_parent: xlib.Window = undefined;
+    xlib.XQueryTree(display, w, &ret_root, &ret_parent, &window_ptr, &window_count);
+    var windows = window_ptr[0..window_count];
+
+    return windows[n];
+}
