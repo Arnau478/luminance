@@ -3,14 +3,41 @@ const xlib = @import("xlib.zig");
 const util = @import("util.zig");
 const config = @import("config.zig");
 
+const layout_floating = @import("layout/floating.zig").layout;
+
 var conf: config.Config = undefined;
 
 var display: *xlib.Display = undefined;
 var root: xlib.Window = undefined;
 
-var clients = std.AutoHashMap(xlib.Window, xlib.Window).init(
+pub var clients = std.AutoHashMap(xlib.Window, xlib.Window).init(
     std.heap.page_allocator,
 );
+
+var layouts = std.ArrayList(Layout).init(std.heap.page_allocator);
+var current_layout: Layout = undefined;
+
+pub const Layout = struct {
+    name: []const u8,
+
+    init: *const fn (display: *xlib.Display, root: xlib.Window) error{LayoutInitError}!void,
+    deinit: *const fn () error{LayoutDeinitError}!void,
+    onButtonPress: *const fn (e: xlib.XButtonEvent) error{OnButtonPressError}!void,
+    onMotionNotify: *const fn (e: xlib.XMotionEvent) error{OnMotionNotifyError}!void,
+};
+
+fn setCurrentLayout(layout_name: []const u8) !void {
+    std.debug.print("Setting layout to {s}\n", .{layout_name});
+
+    for (layouts.toOwnedSlice()) |layout| {
+        if (std.mem.eql(u8, layout.name, layout_name)) {
+            current_layout = layout;
+            return;
+        }
+    }
+
+    return error.UnknownLayout;
+}
 
 /// An error handler that just ignores all errors
 fn dummyErrorHandler(_: ?*xlib.Display, _: ?*xlib.XErrorEvent) callconv(.C) c_int {
@@ -79,6 +106,19 @@ fn onKeyPress(e: xlib.XKeyPressedEvent) !void {
     if (((e.state & xlib.Mod1Mask) != 0) and (e.keycode == xlib.XKeysymToKeycode(display, xlib.XStringToKeysym("F4")))) {
         close(try util.getNthChild(display, e.subwindow, 0));
     }
+}
+
+fn onButtonPress(e: xlib.XButtonEvent) !void {
+    xlib.XGrabPointer(display, e.subwindow, true, xlib.PointerMotionMask | xlib.ButtonReleaseMask, xlib.GrabModeAsync, xlib.GrabModeAsync, xlib.None, xlib.None, xlib.CurrentTime);
+    return current_layout.onButtonPress(e);
+}
+
+fn onButtonRelease(_: xlib.XButtonEvent) !void {
+    xlib.XUngrabPointer(display, xlib.CurrentTime);
+}
+
+fn onMotionNotify(e: xlib.XMotionEvent) !void {
+    return current_layout.onMotionNotify(e);
 }
 
 /// Frame a window
@@ -191,7 +231,13 @@ fn close(w: xlib.Window) void {
 }
 
 pub fn main() !void {
+    // Load and parse configuration file
     conf = try config.getConfig();
+
+    // Load all layouts
+    try layouts.append(layout_floating);
+
+    try setCurrentLayout(conf.layout);
 
     // Open default (null) display
     display = try xlib.XOpenDisplay(null);
@@ -236,6 +282,9 @@ pub fn main() !void {
     xlib.XSetWindowBackground(display, root, try util.strColor(conf.background));
     xlib.XClearWindow(display, root);
 
+    // Initialize current layout
+    try current_layout.init(display, root);
+
     // Main event loop
     while (true) {
         // Get next event
@@ -266,6 +315,16 @@ pub fn main() !void {
             },
             xlib.KeyPress => {
                 try onKeyPress(e.xkey);
+            },
+            xlib.ButtonPress => {
+                try onButtonPress(e.xbutton);
+            },
+            xlib.ButtonRelease => {
+                try onButtonRelease(e.xbutton);
+            },
+            xlib.MotionNotify => {
+                while (xlib.XCheckTypedEvent(display, xlib.MotionNotify, &e)) {}
+                try onMotionNotify(e.xmotion);
             },
             else => {},
         }

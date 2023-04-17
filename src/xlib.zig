@@ -13,19 +13,33 @@ pub const UnmapNotify = c.UnmapNotify;
 pub const DestroyNotify = c.DestroyNotify;
 pub const ReparentNotify = c.ReparentNotify;
 pub const KeyPress = c.KeyPress;
+pub const ButtonPress = c.ButtonPress;
+pub const ButtonRelease = c.ButtonRelease;
+pub const MotionNotify = c.MotionNotify;
 pub const ClientMessage = c.ClientMessage;
 
 pub const IsViewable = c.IsViewable;
 
+pub const None = c.None;
+
 pub const GrabModeSync = c.GrabModeSync;
 pub const GrabModeAsync = c.GrabModeAsync;
 
+pub const CurrentTime = c.CurrentTime;
+
 pub const Mod1Mask = c.Mod1Mask;
 
+pub const ButtonPressMask = c.ButtonPressMask;
+pub const ButtonReleaseMask = c.ButtonReleaseMask;
+pub const PointerMotionMask = c.PointerMotionMask;
+
+pub const Time = c.Time;
 pub const Atom = c.Atom;
 pub const KeySym = c.KeySym;
 pub const KeyCode = c.KeyCode;
 pub const Display = c.Display;
+pub const Cursor = c.Cursor;
+pub const Drawable = c.Drawable;
 pub const Window = c.Window;
 pub const XWindowChanges = c.XWindowChanges;
 pub const XWindowAttributes = c.XWindowAttributes;
@@ -38,7 +52,10 @@ pub const XUnmapEvent = c.XUnmapEvent;
 pub const XDestroyWindowEvent = c.XDestroyWindowEvent;
 pub const XReparentEvent = c.XReparentEvent;
 pub const XKeyPressedEvent = c.XKeyPressedEvent;
-pub const XClientMessageEvent = c.XClientMessageEventvent;
+pub const XKeyReleasedEvent = c.XKeyReleasedEvent;
+pub const XButtonEvent = c.XButtonEvent;
+pub const XMotionEvent = c.XMotionEvent;
+pub const XClientMessageEvent = c.XClientMessageEvent;
 
 pub fn XOpenDisplay(display_name: ?[*]const u8) error{XOpenDisplayError}!*Display {
     if (c.XOpenDisplay(display_name)) |display| {
@@ -130,6 +147,18 @@ pub fn XGrabKey(display: *Display, keycode: i32, modifiers: c_uint, grab_window:
     _ = c.XGrabKey(display, keycode, modifiers, grab_window, @boolToInt(owner_events), pointer_mode, keyboard_mode);
 }
 
+pub fn XGrabButton(display: *Display, button: u32, modifiers: c_uint, grab_window: Window, owner_events: bool, event_mask: c_uint, pointer_mode: i32, keyboard_mode: i32, confine_to: Window, cursor: Cursor) void {
+    _ = c.XGrabButton(display, button, modifiers, grab_window, @boolToInt(owner_events), event_mask, pointer_mode, keyboard_mode, confine_to, cursor);
+}
+
+pub fn XGrabPointer(display: *Display, w: Window, owner_events: bool, event_mask: c_uint, pointer_mode: i32, keyboard_mode: i32, confine_to: Window, cursor: Cursor, time: Time) void {
+    _ = c.XGrabPointer(display, w, @boolToInt(owner_events), event_mask, pointer_mode, keyboard_mode, confine_to, cursor, time);
+}
+
+pub fn XUngrabPointer(display: *Display, time: Time) void {
+    _ = c.XUngrabPointer(display, time);
+}
+
 pub fn XKeysymToKeycode(display: *Display, keysym: KeySym) KeyCode {
     return c.XKeysymToKeycode(display, keysym);
 }
@@ -156,4 +185,20 @@ pub fn XKillClient(display: *Display, w: Window) void {
 
 pub fn XClearWindow(display: *Display, w: Window) void {
     _ = c.XClearWindow(display, w);
+}
+
+pub fn XRaiseWindow(display: *Display, w: Window) void {
+    _ = c.XRaiseWindow(display, w);
+}
+
+pub fn XCheckTypedEvent(display: *Display, event_type: c_int, event_return: *XEvent) bool {
+    return c.XCheckTypedEvent(display, event_type, event_return) != 0;
+}
+
+pub fn XMoveWindow(display: *Display, w: Window, x: i32, y: i32) void {
+    _ = c.XMoveWindow(display, w, x, y);
+}
+
+pub fn XGetGeometry(display: *Display, d: Drawable, root_return: *Window, x_return: *i32, y_return: *i32, width_return: *u32, height_return: *u32, border_width_return: *u32, depth_return: *u32) void {
+    _ = c.XGetGeometry(display, d, root_return, x_return, y_return, width_return, height_return, border_width_return, depth_return);
 }

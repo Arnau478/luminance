@@ -10,6 +10,7 @@ pub const Config = struct {
         background: []const u8,
     },
     background: []const u8,
+    layout: []const u8,
 };
 
 fn openConfig() !std.fs.File {
